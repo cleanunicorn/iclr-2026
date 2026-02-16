@@ -552,5 +552,58 @@ def show_awards():
         for d in details:
             print(f"  - {d.get('title')} ({d.get('venue')})")
 
+@app.command()
+def awarded_papers():
+    """
+    Lists ICLR 2026 papers authored by individuals who have previously received awards.
+    """
+    mongo_client = MongoClient(MONGO_URI)
+    db = mongo_client[DB_NAME]
+    authors_col = db[AUTHORS_COLLECTION]
+    papers_col = db[COLLECTION_NAME]
+    
+    # 1. Get awarded authors
+    query = {"award_estimate_count": {"$gt": 0}}
+    awarded_authors_docs = list(authors_col.find(query))
+    
+    if not awarded_authors_docs:
+        print("No authors with detected awards found.")
+        return
+
+    # Extract names
+    awarded_names = set()
+    author_map = {} # Name -> Award Details
+    for doc in awarded_authors_docs:
+        for name in doc.get('names', []):
+            awarded_names.add(name)
+            author_map[name] = doc
+
+    print(f"Found {len(awarded_names)} distinct names for {len(awarded_authors_docs)} awarded authors.")
+
+    # 2. Find papers
+    paper_query = {"authors": {"$in": list(awarded_names)}}
+    papers = list(papers_col.find(paper_query))
+    
+    print(f"\n--- ICLR 2026 Papers by Awarded Authors ({len(papers)} found) ---")
+    
+    for p in papers:
+        title = p.get('title')
+        url = p.get('pdf_url')
+        p_authors = p.get('authors', [])
+        
+        # Identify which authors are the awarded ones
+        awards_on_paper = []
+        for a in p_authors:
+            if a in awarded_names:
+                awards_on_paper.append(a)
+        
+        print(f"\nTitle: {title}")
+        print(f"Awarded Authors: {', '.join(awards_on_paper)}")
+        print(f"URL: {url}")
+        
+        for a in awards_on_paper:
+            details = author_map[a].get('award_details', [])
+            print(f"  * {a}: {len(details)} prior awards detected.")
+
 if __name__ == "__main__":
     app()

@@ -101,6 +101,19 @@ uv run main.py show-awards
 ```
 -   Lists all authors with detected awards in the database.
 
+-   Lists all authors with detected awards in the database.
+
+### 5. Awarded Papers
+
+List ICLR 2026 papers that are authored by these distinguished researchers:
+
+```bash
+uv run main.py awarded-papers
+```
+
+-   Filters for current conference papers where at least one author has a prior award detected.
+-   Useful for finding potentially high-impact work based on author track record.
+
 ## Data Structure
 
 **Database**: `iclr-2026`
